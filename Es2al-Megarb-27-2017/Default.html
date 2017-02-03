@@ -1,0 +1,285 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <link href="Content/bootstrap.min.css"rel="stylesheet" />
+    <script src="Scripts/jquery-1.9.1.min.js"></script>
+	<meta charset="utf-8" />
+</head>
+<body>
+    <input type="hidden" id="CatagoryID" value="0" />
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-6">
+                <h2>Categories</h2>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-6">
+                <table id="categoryTable"class="table table-bordered table-condensed table-striped">
+                    <thead>
+                        <tr>
+                            <th align="right">arabic name</th>
+                            <th align="center">english name</th>
+                            <th>Edit</th>
+                            <th>Delete</th>
+
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-6">
+                <button type="button" id="addButton"
+                        class="btn btn-primary"
+                        onclick="addClick();">
+                    Add category
+                </button>
+            </div>
+        </div>
+
+
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        add new cateory
+                    </div>
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label for="productname">arabc name</label>
+                            <input type="text" id="CatagoryNameAr"
+                                   class="form-control" />
+                        </div>
+                       
+                        <div class="form-group">
+                            <label for="url">english name</label>
+                            <input type="url" id="CatagoryNameEn"
+                                   class="form-control" />
+                        </div>
+                    </div>
+                    <div class="panel-footer">
+                        <div class="row">
+                            <div class="col-xs-12">
+                                <button type="button" id="updateButton"
+                                        class="btn btn-primary"
+                                        onclick="updateClick();">
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            var category = {
+                CatagoryID: 0,
+                CatagoryNameAr: "",
+                CatagoryNameEn: ""
+            }
+            getAllCategories();
+        });
+        function getAllCategories() {
+            $.ajax({
+                url: 'http://localhost:58415/api/Categories/GetCategories',
+                type: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    categoriesListSuccess(data);
+                    
+                },
+                error: function () {
+                }
+            });
+        }
+
+        function categoriesListSuccess(categories) {
+            // Iterate over the collection of data
+            //var categoriesTable = $('productTable');
+            $.each(categories, function (index, category) {
+                categoryAddRow(category);
+            });
+        }
+
+        function categoryAddRow(category) {
+            // Check if <tbody> tag exists, add one if not
+            if ($("#categoryTable tbody").length == 0) {
+                $("#categoryTable").append("<tbody></tbody>");
+            }
+            // Append row to <table>
+            $("#categoryTable tbody").append(
+              categorytBuildTableRow(category));
+        }
+
+        function categorytBuildTableRow(category) {
+            var res =
+            "<tr>" +
+            "<td>" +category.CatagoryNameAr + "</td>" +
+            "<td>" + category.CatagoryNameEn + "</td>" +
+
+            "<td>" +
+            "<button type='button' " +
+            "onclick='categorytGet(this);' " +
+            "class='btn btn-default' " +
+            "data-id='" + category.CatagoryID + "'>" +
+             "<span class='glyphicon glyphicon-edit' />"+
+             "</button>" +
+            "</td >"+
+
+            "<td>" +
+              "<button type='button' " +
+                "onclick='categoryDelete(this);' " +
+                "class='btn btn-default' " +
+                "data-id='" + category.CatagoryID + "'>" +
+                "<span class='glyphicon glyphicon-remove' />" +
+              "</button>" +
+            "</td>" +
+            "</tr>"
+            ;
+
+            return res;
+        }
+
+
+        function categoryDelete(ctl) {
+            var id = $(ctl).data("id");
+
+            // Call Web API to delete a product
+            $.ajax({
+                url: "http://localhost:58415/api/Categories/DeleteCategory/" + id,
+                type: 'DELETE',
+                success: function (category) {
+                    $(ctl).parents("tr").remove();
+                },
+                error: function (request, message, error) {
+                    handleException(request, message, error);
+                }
+            });
+        }
+
+      // Handle click event on Update button
+        function updateClick() {
+           
+            category = new Object();
+            
+            category.CatagoryID = $("#CatagoryID").val();
+            category.CatagoryNameAr = $("#CatagoryNameAr").val();
+            category.CatagoryNameEn = $("#CatagoryNameEn").val();
+        
+            if ($("#updateButton").text().trim() == "Add") {
+                categoryAdd(category);
+            }
+            else {
+                categoryUpdate(category);
+            }
+        }
+
+        function categoryUpdate(category)
+        {
+            debugger;
+            $.ajax({
+                url: "http://localhost:58415/api/Categories/PutCategory/" + category.CatagoryID,
+                type: 'PUT',
+                contentType: "application/json;charset=utf-8",
+                data: JSON.stringify(category),
+                success: function (category) {
+                    categoryUpdateSuccess(category);
+                }
+            });
+        }
+        function categoryUpdateSuccess(category) {
+            categoryUpdateInTable(category);
+        }
+
+        // Update product in <table>
+        function categoryUpdateInTable(category) {
+            // Find Product in <table>
+            var row = $("#categoryTable button[data-id='" + category.CatagoryID + "']")
+                      .parents("tr")[0];
+            // Add changed product to table
+            $(row).after(categorytBuildTableRow(category));
+            // Remove original product
+            $(row).remove();
+
+            // Clear form fields
+            formClear();
+
+            // Change Update Button Text
+            $("#updateButton").text("Add");
+        }
+
+
+        
+
+
+        function categoryAdd(product) {
+            // Call Web API to add a new product
+            $.ajax({
+                url: "http://localhost:58415/api/Categories/PostCategory",
+                type: 'POST',
+                contentType: "application/json;charset=utf-8",
+                data: JSON.stringify(category),
+                success: function (category) {
+                    categoryAddSuccess(category);
+                },
+                error: function (request, message, error) {
+                    handleException(request, message, error);
+                }
+            });
+        }
+        function categoryAddSuccess(category) {
+            categoryAddRow(category);
+            formClear();
+        }
+        function formClear() {
+            $("#CatagoryNameAr").val("");
+            $("#CatagoryNameEn").val("");
+        }
+
+
+        function categorytGet(ctl) {
+           
+            // Get product id from data- attribute
+            var id = $(ctl).data("id");
+
+            // Store product id in hidden field
+            $("#CatagoryID").val(id);
+
+            // Call Web API to get a Product
+            $.ajax({
+                url: "http://localhost:58415/api/Categories/GetCategory/" + id,
+                type: 'GET',
+                dataType: 'json',
+                success: function (category) {
+                    categoryToFields(category);
+
+                    // Change Update Button Text
+                    $("#updateButton").text("Update");
+                },
+                error: function (request, message, error) {
+                    handleException(request, message, error);
+                }
+            });
+        }
+
+        function categoryToFields(category) {
+            $("#CatagoryNameAr").val(category.CatagoryNameAr);
+            $("#CatagoryNameEn").val(category.CatagoryNameEn);
+        }
+
+      // Handle click event on Add button
+      function addClick() {
+      }
+    </script>
+</body>
+</html>
